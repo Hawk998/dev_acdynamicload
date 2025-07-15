@@ -4,7 +4,8 @@ export interface ChartData {
     timeLabels: string[];
     voltageData: number[];
     currentData: number[];
-    powerData: number[]; // Power in kW
+    powerData: number[]; // Power in kW (measured/present power)
+    setpointData: number[]; // Setpoint power in kW
     maxPowerLimit: number | null;
 }
 
@@ -45,7 +46,7 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                 {
                     yAxisID: 'power',
                     data: data.powerData,
-                    label: 'Power',
+                    label: 'Present Power',
                     borderColor: '#28a745',
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
                     borderWidth: 2,
@@ -54,9 +55,20 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                 },
                 {
                     yAxisID: 'power',
+                    data: data.setpointData,
+                    label: 'Setpoint Power',
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    borderDash: [3, 3],
+                },
+                {
+                    yAxisID: 'power',
                     data: maxPowerLine,
                     label: `Max Power: ${data.maxPowerLimit || 0} kW`,
-                    borderColor: '#dc3545',
+                    borderColor: '#006400',
                     borderWidth: 3,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -110,7 +122,7 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                     ticks: {
                         color: '#3e95cd',
                         callback: function(value: any) {
-                            return value + ' V';
+                            return value;
                         }
                     }
                 },
@@ -133,7 +145,7 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                     ticks: {
                         color: '#FF0000',
                         callback: function(value: any) {
-                            return value + ' A';
+                            return value;
                         }
                     },
                     // Separate Positionierung
@@ -159,7 +171,7 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                     ticks: {
                         color: '#28a745',
                         callback: function(value: any) {
-                            return value + ' kW';
+                            return value;
                         }
                     },
                     // Separate Positionierung
@@ -218,18 +230,26 @@ export function updateChartData(chart: Chart, data: ChartData): void {
         chart.data.datasets[1].label = 'Current';
     }
 
-    // Update power dataset
+    // Update present power dataset
     chart.data.datasets[2].data = data.powerData;
     if (data.powerData[data.powerData.length - 1] != undefined) {
-        chart.data.datasets[2].label = 'Power: ' + data.powerData[data.powerData.length - 1].toFixed(1) + ' kW';
+        chart.data.datasets[2].label = 'Present Power: ' + data.powerData[data.powerData.length - 1].toFixed(1) + ' kW';
     } else {
-        chart.data.datasets[2].label = 'Power';
+        chart.data.datasets[2].label = 'Present Power';
+    }
+
+    // Update setpoint power dataset
+    chart.data.datasets[3].data = data.setpointData;
+    if (data.setpointData[data.setpointData.length - 1] != undefined) {
+        chart.data.datasets[3].label = 'Setpoint Power: ' + data.setpointData[data.setpointData.length - 1].toFixed(1) + ' kW';
+    } else {
+        chart.data.datasets[3].label = 'Setpoint Power';
     }
 
     // Update max power line
     const maxPowerLine = data.maxPowerLimit !== null ? Array(data.timeLabels.length).fill(data.maxPowerLimit) : [];
-    chart.data.datasets[3].data = maxPowerLine;
-    chart.data.datasets[3].label = `Max Power: ${data.maxPowerLimit || 0} kW`;
+    chart.data.datasets[4].data = maxPowerLine;
+    chart.data.datasets[4].label = `Max Power: ${data.maxPowerLimit || 0} kW`;
 
     chart.update('none'); // 'none' für bessere Performance
 }
@@ -239,7 +259,7 @@ export function updateMaxPowerLine(chart: Chart, maxPowerLimit: number | null, t
     if (!chart) return;
 
     const maxPowerLine = maxPowerLimit !== null ? Array(timeLabelsLength).fill(maxPowerLimit) : [];
-    chart.data.datasets[3].data = maxPowerLine;
-    chart.data.datasets[3].label = `Max Power: ${maxPowerLimit || 0} kW`;
+    chart.data.datasets[4].data = maxPowerLine;
+    chart.data.datasets[4].label = `Max Power: ${maxPowerLimit || 0} kW`;
     chart.update();
 }

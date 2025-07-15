@@ -55,6 +55,7 @@
     let voltageHistory: number[] = [];
     let currentHistory: number[] = [];
     let powerHistory: number[] = []; // Power in kW
+    let setpointHistory: number[] = []; // Setpoint in kW
 
 
     onMount(async () => {
@@ -66,6 +67,7 @@
             voltageData: voltageHistory,
             currentData: currentHistory,
             powerData: powerHistory,
+            setpointData: setpointHistory,
             maxPowerLimit: null // Will be updated after config loads
         };
         chart = createPowerChart(chartCanvas, initialChartData);
@@ -90,7 +92,7 @@
             
             // Update chart with loaded config values
             if (chart) {
-                updateMaxPowerLine(chart, maxkWValue, timeLabels.length);
+                updateMaxPowerLine(chart, maxkWValueExternal, timeLabels.length);
             }
             
             await globalThis.api.invoke("setCurrentSetPoint", { HostIp: currentHostIp, CurrentSetPoint: 1 });
@@ -162,18 +164,18 @@
 
                     const now = new Date().toLocaleTimeString();
                     
-                    // Für Auto Test: Alle Datenpunkte speichern, sonst nur die letzten 50
-                    if (!autoTestRunning && timeLabels.length >= 50) {
-                        timeLabels.shift();
-                        voltageHistory.shift();
-                        currentHistory.shift();
-                        powerHistory.shift();
-                    }
+                    // Für Auto Test: Neue Aufzeichnung wird am Anfang geleert
+                    // Außerhalb des Auto Tests: Alle Werte speichern (keine Begrenzung auf 50)
+                    // Die Begrenzung auf 50 Werte wurde entfernt für kontinuierliche Aufzeichnung
                     
                     timeLabels.push(now);
                     voltageHistory.push(voltage);
                     currentHistory.push(current);
                     powerHistory.push(powerKw);
+                    
+                    // Add current setpoint to history
+                    const currentSetpoint = kwValue || 0;
+                    setpointHistory.push(currentSetpoint);
                     
                     // Update chart with new data
                     if (chart) {
@@ -182,7 +184,8 @@
                             voltageData: voltageHistory,
                             currentData: currentHistory,
                             powerData: powerHistory,
-                            maxPowerLimit: maxkWValue
+                            setpointData: setpointHistory,
+                            maxPowerLimit: maxkWValueExternal // Use calculated value from duty cycle
                         };
                         updateChartData(chart, chartData);
                         console.log("Chart updated");
@@ -272,9 +275,9 @@
         if (result && !isNaN(Number(result))) {
             maxCurrentValue = Number(Number(result*0.6).toFixed(2));
             maxkWValueExternal = Number(((maxCurrentValue * voltageLimit) / 1000).toFixed(2));
-            // Update max power line in chart
+            // Update max power line in chart with calculated value from duty cycle
             if (chart) {
-                updateMaxPowerLine(chart, maxkWValue, timeLabels.length);
+                updateMaxPowerLine(chart, maxkWValueExternal, timeLabels.length);
             }
         } else {
             maxCurrentValue = null;
@@ -445,6 +448,7 @@ function clearChartForAutoTest() {
     voltageHistory.length = 0;
     currentHistory.length = 0;
     powerHistory.length = 0;
+    setpointHistory.length = 0;
     
     // Chart sofort aktualisieren
     if (chart) {
@@ -453,7 +457,8 @@ function clearChartForAutoTest() {
             voltageData: voltageHistory,
             currentData: currentHistory,
             powerData: powerHistory,
-            maxPowerLimit: maxkWValue
+            setpointData: setpointHistory,
+            maxPowerLimit: maxkWValueExternal // Use calculated value from duty cycle
         };
         updateChartData(chart, chartData);
         console.log('Chart cleared for Auto Test');
@@ -498,6 +503,9 @@ async function startAutoTest() {
         const minPower = 1.0;
         const step = 0.1;
         autoTestPhase = 'up'; // Start mit Hochfahren
+        
+        // Setze den Slider explizit auf 1kW zu Beginn
+        kwValue = 1.0;
         
         const testStep = async () => {
             if (autoTestRunning) {
