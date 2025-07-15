@@ -56,6 +56,7 @@
     let currentHistory: number[] = [];
     let powerHistory: number[] = []; // Power in kW
     let setpointHistory: number[] = []; // Setpoint in kW
+    let sinkPowerHistory: number[] = []; // Sink Power in kW
 
 
     onMount(async () => {
@@ -68,6 +69,7 @@
             currentData: currentHistory,
             powerData: powerHistory,
             setpointData: setpointHistory,
+            sinkPowerData: sinkPowerHistory,
             maxPowerLimit: null // Will be updated after config loads
         };
         chart = createPowerChart(chartCanvas, initialChartData);
@@ -177,6 +179,12 @@
                     const currentSetpoint = kwValue || 0;
                     setpointHistory.push(currentSetpoint);
                     
+                    // Add sink power to history
+                    const currentSinkPower = (sinkPowerValue && sinkPowerValue.successful) 
+                        ? Number(sinkPowerValue.msg) / 1000 
+                        : 0;
+                    sinkPowerHistory.push(currentSinkPower);
+                    
                     // Update chart with new data
                     if (chart) {
                         const chartData: ChartData = {
@@ -185,6 +193,7 @@
                             currentData: currentHistory,
                             powerData: powerHistory,
                             setpointData: setpointHistory,
+                            sinkPowerData: sinkPowerHistory,
                             maxPowerLimit: maxkWValueExternal // Use calculated value from duty cycle
                         };
                         updateChartData(chart, chartData);
@@ -449,6 +458,7 @@ function clearChartForAutoTest() {
     currentHistory.length = 0;
     powerHistory.length = 0;
     setpointHistory.length = 0;
+    sinkPowerHistory.length = 0;
     
     // Chart sofort aktualisieren
     if (chart) {
@@ -458,6 +468,7 @@ function clearChartForAutoTest() {
             currentData: currentHistory,
             powerData: powerHistory,
             setpointData: setpointHistory,
+            sinkPowerData: sinkPowerHistory,
             maxPowerLimit: maxkWValueExternal // Use calculated value from duty cycle
         };
         updateChartData(chart, chartData);

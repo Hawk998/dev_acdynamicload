@@ -6,6 +6,7 @@ export interface ChartData {
     currentData: number[];
     powerData: number[]; // Power in kW (measured/present power)
     setpointData: number[]; // Setpoint power in kW
+    sinkPowerData: number[]; // Sink power in kW
     maxPowerLimit: number | null;
 }
 
@@ -63,6 +64,16 @@ export function createPowerChart(canvas: HTMLCanvasElement, data: ChartData): Ch
                     fill: false,
                     pointRadius: 0,
                     borderDash: [3, 3],
+                },
+                {
+                    yAxisID: 'power',
+                    data: data.sinkPowerData,
+                    label: 'Sink Power',
+                    borderColor: '#1e3a8a',
+                    backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
                 },
                 {
                     yAxisID: 'power',
@@ -246,10 +257,18 @@ export function updateChartData(chart: Chart, data: ChartData): void {
         chart.data.datasets[3].label = 'Setpoint Power';
     }
 
+    // Update sink power dataset
+    chart.data.datasets[4].data = data.sinkPowerData;
+    if (data.sinkPowerData[data.sinkPowerData.length - 1] != undefined) {
+        chart.data.datasets[4].label = 'Sink Power: ' + data.sinkPowerData[data.sinkPowerData.length - 1].toFixed(1) + ' kW';
+    } else {
+        chart.data.datasets[4].label = 'Sink Power';
+    }
+
     // Update max power line
     const maxPowerLine = data.maxPowerLimit !== null ? Array(data.timeLabels.length).fill(data.maxPowerLimit) : [];
-    chart.data.datasets[4].data = maxPowerLine;
-    chart.data.datasets[4].label = `Max Power: ${data.maxPowerLimit || 0} kW`;
+    chart.data.datasets[5].data = maxPowerLine;
+    chart.data.datasets[5].label = `Max Power: ${data.maxPowerLimit || 0} kW`;
 
     chart.update('none'); // 'none' für bessere Performance
 }
@@ -259,7 +278,7 @@ export function updateMaxPowerLine(chart: Chart, maxPowerLimit: number | null, t
     if (!chart) return;
 
     const maxPowerLine = maxPowerLimit !== null ? Array(timeLabelsLength).fill(maxPowerLimit) : [];
-    chart.data.datasets[4].data = maxPowerLine;
-    chart.data.datasets[4].label = `Max Power: ${maxPowerLimit || 0} kW`;
+    chart.data.datasets[5].data = maxPowerLine;
+    chart.data.datasets[5].label = `Max Power: ${maxPowerLimit || 0} kW`;
     chart.update();
 }
