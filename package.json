@@ -1,6 +1,6 @@
 {
-  "name": "sveltron-template",
-  "productName": "Sveltron",
+  "name": "ac_dynamic_load",
+  "productName": "ac_dynamic_load",
   "version": "1.0.1",
   "description": "A tool template based on electron and svelte",
   "author": {
